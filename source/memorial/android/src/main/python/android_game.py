@@ -96,7 +96,6 @@ def raid_action(game, actor, skill, party):
 
 
 LAPIS_GRANT_MAX = 1000000
-SAVE_IMPORT_MAX_BYTES = 128 * 1024 * 1024
 
 
 def grant_lapis(game, amount):
@@ -116,64 +115,6 @@ def grant_lapis(game, amount):
         return json.dumps({'added': amount,
                            'free': int(player.currencies.get('lapis_free', 0)),
                            'paid': int(player.currencies.get('lapis_paid', 0))})
-
-
-def export_save(game):
-    """The current save as JSON text, taken from the engine under its lock (never a half-written file)."""
-    from player_state import _serialise
-    server = game.server
-    with server.STATE_LOCK:
-        player = server.State.player
-        if player is None or not Path(server.st.STATE_FILE).is_file():
-            raise ValueError('There is no local save to back up yet.')
-        # The same view an ordinary autosave writes: no test overlays, no season-only switch bits.
-        return json.dumps(_serialise(player._persist_view(force=False)), indent=1)
-
-
-def import_save(game, text):
-    """Validate a backed-up save, keep a copy of the current one, then replace it atomically.
-
-    The caller must restart the app afterwards so the engine reloads the new save through its
-    normal start-up path; nothing in the running client is refreshed here.
-    """
-    import shutil
-    import tempfile
-    import time
-    from player_state import PlayerState
-    text = str(text)
-    if len(text.encode('utf-8')) > SAVE_IMPORT_MAX_BYTES:
-        raise ValueError('That file is too large to be an Exvius save.')
-    try:
-        raw = json.loads(text)
-    except json.JSONDecodeError as error:
-        raise ValueError('That file is not valid JSON.') from error
-    if not isinstance(raw, dict) or 'currencies' not in raw or 'roster' not in raw:
-        raise ValueError('That file is not an Exvius Offline save.')
-    server = game.server
-    with server.STATE_LOCK:
-        destination = Path(server.st.STATE_FILE)
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        fd, candidate = tempfile.mkstemp(prefix='import-', suffix='.json', dir=str(destination.parent))
-        try:
-            with os.fdopen(fd, 'w', encoding='utf-8') as handle:
-                handle.write(text)
-            # The engine's own loader: migrates old files and refuses incoherent ones (raises ValueError).
-            imported = PlayerState.load(candidate, slot=server.st.STATE_SLOT, mode='live')
-        finally:
-            if os.path.exists(candidate):
-                os.remove(candidate)
-        if destination.exists():
-            recovery = destination.parent / 'backups'
-            recovery.mkdir(exist_ok=True)
-            shutil.copyfile(destination, recovery / (destination.stem + '-before-import-' +
-                                                     str(time.time_ns()) + '.json'))
-        imported.data.setdefault('meta', {})['offline_started'] = True
-        if not imported.save(str(destination), force=True):
-            raise OSError('The imported save could not be written. The previous save is unchanged.')
-        server.State.player = imported
-        server.State.state_dirty = False
-        return json.dumps({'name': imported.data['identity']['handle_name'],
-                           'rank': imported.data['rank']['level']})
 
 
 def title_action(game, action):
