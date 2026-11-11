@@ -270,6 +270,22 @@ public final class LocalGameBridge {
         return module.callAttr("title_action", game, action).toString();
     }
 
+    // Save tools for the launcher page. Each returns JSON text or throws with a readable message.
+    public static synchronized String grantLapis(int amount) {
+        ensureGame();
+        return module.callAttr("grant_lapis", game, amount).toString();
+    }
+
+    public static synchronized String exportSave() {
+        ensureGame();
+        return module.callAttr("export_save", game).toString();
+    }
+
+    public static synchronized String importSave(String text) {
+        ensureGame();
+        return module.callAttr("import_save", game, text).toString();
+    }
+
     static synchronized Response request(String method, String path, byte[] body,
                                           Map<String, String> headers) throws IOException {
         try {
