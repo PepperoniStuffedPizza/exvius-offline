@@ -36,21 +36,27 @@ if not defined PY310 (
     )
 )
 
-rem --- Java 11 ---
-if not defined JAVA_HOME (
-    for /d %%J in ("C:\Program Files\Eclipse Adoptium\jdk-11*") do set "JAVA_HOME=%%~fJ"
-)
-if not defined JAVA_HOME (
-    echo [MISSING] Java 11. Install "Temurin 11" from adoptium.net, then run this again.
-    set "PROBLEMS=1"
-) else if not exist "%JAVA_HOME%\bin\java.exe" (
-    echo [MISSING] Java not found at %JAVA_HOME%. Install "Temurin 11" from adoptium.net.
-    set "PROBLEMS=1"
-) else (
-    echo [OK] Java at %JAVA_HOME%
-    "%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /i "version"
-    set "PATH=%JAVA_HOME%\bin;%PATH%"
-)
+rem --- Java 11 (Gradle 7.6 cannot run on newer Java such as 21 or 25) ---
+rem A Temurin 11 install wins over any JAVA_HOME, which may point at a newer Java.
+for /d %%J in ("C:\Program Files\Eclipse Adoptium\jdk-11*") do set "JAVA_HOME=%%~fJ"
+if not defined JAVA_HOME goto :java_missing
+if not exist "%JAVA_HOME%\bin\java.exe" goto :java_missing
+set "JAVA_VERSION="
+for /f "tokens=3" %%V in ('""%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /i "version""') do set "JAVA_VERSION=%%~V"
+if not "%JAVA_VERSION:~0,3%"=="11." goto :java_wrong
+echo [OK] Java %JAVA_VERSION% at %JAVA_HOME%
+set "PATH=%JAVA_HOME%\bin;%PATH%"
+goto :java_done
+:java_missing
+echo [MISSING] Java 11. Install the Temurin 11 JDK .msi from adoptium.net/temurin/releases/?version=11
+set "PROBLEMS=1"
+goto :java_done
+:java_wrong
+echo [MISSING] Java 11. Found Java %JAVA_VERSION% instead, which this build cannot use.
+echo           Install the Temurin 11 JDK .msi from adoptium.net/temurin/releases/?version=11
+echo           You can keep your other Java; build.bat picks Java 11 automatically.
+set "PROBLEMS=1"
+:java_done
 
 rem --- Android SDK ---
 if not defined ANDROID_HOME set "ANDROID_HOME=%LOCALAPPDATA%\Android\Sdk"
@@ -78,8 +84,8 @@ call :need "%ORIGINAL_APK%" "the original FFBE Global v9.0.0 APK"
 call :need "%APKTOOL%" "apktool 3.0.3"
 call :need "%FRAMEWORK%\" "the empty apktool-framework folder"
 call :need "tools\vendor\frida-gadget-17.24.3-android-arm64.so" "Frida Gadget 17.24.3 for arm64"
-call :need "tools\vendor\android-agent\node_modules\frida-compile\dist\cli.js" "frida-compile (npm install frida-compile)"
-call :need "%KEYSTORE%" "your signing key (step 6)"
+call :need "tools\vendor\android-agent\node_modules\frida-compile\dist\cli.js" "frida-compile"
+call :need "%KEYSTORE%" "your signing key"
 
 if "%PROBLEMS%"=="1" (
     echo.
