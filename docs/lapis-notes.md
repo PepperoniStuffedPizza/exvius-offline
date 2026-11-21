@@ -54,3 +54,8 @@ Not explicitly confirmed: raid auto-play button (lapis13), 50,000 Friend Points 
 ## Saves
 - Native engine save: `<files>/exvius/state/campaign.json` (UTF-8 JSON, atomic write via .tmp). The APK has allowBackup=false and debuggable=false, so it can't be pulled without root or an in-app export.
 - Fresh-save trick: patch libgame `/campaign.json\0` -> `/campaig2.json\0`.
+
+## Summons and Bulk Fusion (lapis39-51)
+- Multi-summon reveal: `GachaResultScene::updateEvent` opens `UnitGetScene` for a crystal when its draw data says "new" (or the unit is NeoVision). "New" comes from `GachaResultScene::isNewUnit`, which matches against `UserGachaResult::getNewIds` - the gacha response key `uR70J6Lr`. Elvlin's engine never emits that key (it is in `source/docs/analysis/unhandled_request_fields.json`), so `newunit` computes it client side with `UserUnitInfoList::getCountWithUnitID`.
+- Single summons show the reveal from `GachaEffectScene::changeUnitGetScene` when the result count is 1.
+- Bulk Fusion: `UnitMixAutoSelectScene::setLayoutFilterStartRare` pushes rarity bits {1,2,4,8}; the filter (SortFilter 332, filter 20) is applied by `UserUnitInfoList::isUserFilter` on the family's lowest rarity (NV families count as 6, bit 32). `UnitMixAutoSelectConfirmScene::createFilteredUnitList` separately skipped units above 4 star.

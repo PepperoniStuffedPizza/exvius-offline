@@ -4,7 +4,7 @@ Port of patch031.py. The original game code in libgame.so is byte-identical betw
 so every game-code patch keeps its address. Elvlin's offline engine segment was rebuilt, so the Friend Points
 and mission-challenge patches and the code cave moved. The update prompt now hooks classes8.dex.
 """
-import json, os, re, struct, sys, zipfile
+import os, json, os, re, struct, sys, zipfile
 src, rules_apk, dst, lapis, new_code = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), int(sys.argv[5])
 SIG = re.compile(r'^META-INF/([^/]+\.(SF|RSA|DSA|EC)|MANIFEST\.MF)$', re.I)
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -22,10 +22,15 @@ SEARCH_NAME = 'searchname' in EXTRA
 FP50K = 'fp50k' in EXTRA
 ALL_CHALLENGES = 'allchallenges' in EXTRA
 FF_BUTTON = 'ffbutton' in EXTRA
+FUSION6 = 'fusion6' in EXTRA
+GACHA8 = 'gacha8' in EXTRA
+NEWUNIT = 'newunit' in EXTRA
+FUSION5 = 'fusion5' in EXTRA or FUSION6
 TMR_ALL = 'tmr' in EXTRA or 'tmrmulti' in EXTRA
 TMR_LIMIT = None if 'tmrmulti' in EXTRA else 'once'
 KING_POTS = next((int(a[9:]) for a in EXTRA if a.startswith('kingpots=')), None)
 DROP_X = next((int(a[6:]) for a in EXTRA if a.startswith('dropx=')), None)
+MULTI_DRAWS = next((int(a[11:]) for a in EXTRA if a.startswith('multidraws=')), None)
 FP_DRAWS = next((int(a[8:]) for a in EXTRA if a.startswith('fpdraws=')), None)
 SPEED = 4 if 'speed3r' in EXTRA else 3 if 'speed3' in EXTRA else 2 if 'speed2' in EXTRA else 0
 SPEED2 = SPEED > 0
@@ -71,6 +76,11 @@ def disable_updates(d):
     return bytes(d)
 
 def edit_rule(name, data):
+    if MULTI_DRAWS and name.startswith('gacha_') and name.endswith('.json'):
+        # every 11-draw multi-summon (button offers, step-up steps, campaigns) -> MULTI_DRAWS units; costs unchanged
+        txt, n = re.subn(r'("draws":\s*)11\b', lambda m: m.group(1) + str(MULTI_DRAWS), data.decode('utf8'))
+        if n:
+            data = txt.encode('utf8'); log.append('rules: %s: %d eleven-draw summons -> %d units' % (name, n, MULTI_DRAWS))
     if name == 'daily_quests.json':
         r = json.loads(data)
         for q in r['quests']: q['reward_info'] = '50:1:%d' % lapis
@@ -203,26 +213,37 @@ def patch_libgame(data):
             fp = FF_FLAG_VA & ~0xfff; fo = FF_FLAG_VA & 0xfff
             ldrb = lambda rt, rn, imm: struct.pack('<I', 0x39400000 | (imm << 10) | (rn << 5) | rt)
             # Auto/Repeat no longer speed anything up: only the button's flag does (3x). ff1 replaces the Auto-flag load; ff2 replaces the time scale choice.
-            ff1 = adrp(FF_VA, 11, fp) + ldrb(10, 11, fo) + BC0(FF_VA + 8, CAVE_VA + 0x88, 10) + B(FF_VA + 0xc, CAVE_VA + 0x1c)
-            ff2 = adrp(FF_VA + 0x20, 17, fp) + ldrb(17, 17, fo) + struct.pack('<I', 0x1e211001) + struct.pack('<I', 0x35000000 | (2 << 5) | 17) \
-                + struct.pack('<I', 0x1e2e1001) + B(FF_VA + 0x34, CAVE_VA + 0xd0)
+            # flag 0 = normal, 1 = battle button (3x), 7 = summon scene (7x: time scale 7 and 6 extra logic steps)
+            w = lambda v: struct.pack('<I', v)
+            ff1 = adrp(FF_VA, 11, fp) + ldrb(10, 11, fo) + BC0(FF_VA + 8, CAVE_VA + 0x88, 10) + w(0x52800054) + w(0x528000cc) + w(0x71001d5f) + w(0x1a940194) + B(FF_VA + 0x1c, CAVE_VA + 0x20)
+            if GACHA8:
+                # flag 8 (summon animation scene): time scale 7x but no extra logic steps; flag 7 (result screen): both
+                ff1 = adrp(FF_VA, 11, fp) + ldrb(10, 11, fo) + BC0(FF_VA + 8, CAVE_VA + 0x88, 10) + w(0x7100215f) + BC(FF_VA + 0x10, CAVE_VA + 0x88, 0) \
+                    + w(0x52800054) + w(0x528000cc) + w(0x71001d5f) + w(0x1a940194) + B(FF_VA + 0x24, CAVE_VA + 0x20)
+            FF2 = FF_VA + 0x1c0
+            ff2 = adrp(FF2, 17, fp) + ldrb(17, 17, fo) + w(0x1e2e1001) + BC0(FF2 + 0xc, FF2 + 0x20, 17) + w(0x1e211001) + w(0x71001e3f) \
+                + BC(FF2 + 0x18, FF2 + 0x20, 1) + w(0x1e239001) + w(0xd65f03c0)
+            if GACHA8:
+                ff2 = ff2[:0x18] + BC(FF2 + 0x18, FF2 + 0x20, 3) + ff2[0x1c:]     # b.lo: scale 7x for flag >= 7
             assert data[CAVE_OFF + 0x18:CAVE_OFF + 0x1c] == bytes.fromhex('2a316339'), 'unexpected speed cave (auto load 1)'
             assert data[CAVE_OFF + 0xa4:CAVE_OFF + 0xa8] == bytes.fromhex('11326339'), 'unexpected speed cave (auto load 2)'
             assert set(data[eng_file(FF_VA):eng_file(FF_VA) + 0x40]) == {0}, 'ff cave not empty'
+            assert set(data[eng_file(FF2):eng_file(FF2) + 0x24]) == {0}, 'ff2 cave not empty'
             data[eng_file(FF_VA):eng_file(FF_VA) + len(ff1)] = ff1
-            data[eng_file(FF_VA + 0x20):eng_file(FF_VA + 0x20) + len(ff2)] = ff2
+            data[eng_file(FF2):eng_file(FF2) + len(ff2)] = ff2
             data[CAVE_OFF + 0x18:CAVE_OFF + 0x1c] = B(CAVE_VA + 0x18, FF_VA)
-            data[CAVE_OFF + 0xa4:CAVE_OFF + 0xa8] = B(CAVE_VA + 0xa4, FF_VA + 0x20)
+            data[CAVE_OFF + 0xa4:CAVE_OFF + 0xa8] = B(CAVE_VA + 0xa4, FF2)
             # battle detection: dynamic_cast<BattleBaseScene*>(this) != null -> bump the counter at flag+2 (Java shows the button while it moves)
             # battle detection (dynamic_cast<BattleBaseScene*>(this) != null -> bump the counter at flag+2; Java shows the buttons while it moves)
             # + finish request (flag+4): put every living enemy into the game's own dying state (0xd) after zeroing its HP, so the
             # normal death/drop/win flow runs. Assembled from f3.s (kept in the kit) at F3 = 0x4300f90, returns to cave+0x18.
             F3 = FF_VA + 0x40
             assert FF_VA == 0x4300f50 and F3 == 0x4300f90 and CAVE_VA == 0x4300e30, 'finish routine is position dependent'
-            ff3 = bytes.fromhex('e00313aa019effb021c00991e29fffb042a004910300809218e5aa97400700b4812100b02208653942040011220825392310653983060034e00313aa019effb021c00991a2a0ffd042e00891030080920ae5aa97e00000b408e445b91f0501718100005493c34097e8ff8f5208c000b9812100902414653984000034840400512414253920000014440b805224142539f55bbea987c34097ee554197200300b44fa85f97e00200b4081840f9150140f9160940f9bf0600f14b020054c08640f8b50600d180ffffb4f40300aa081043b91f35007100ffff541f390071c0feff54e00314aae1031faa27106397e00314aaa1018052e2031f2a10386297eeffff17f55bc2a869b7fff06cffff17')
-            assert len(ff3) == 268
+            ff3 = bytes.fromhex('e00313aa019effb021c00991e29fffb042a004910300809218e5aa97800700b4812100b02208653942040011220825392310653983060034e00313aa019effb021c00991a2a0ffd042e00891030080920ae5aa97e00000b408e445b91f0501718100005493c34097e8ff8f5208c000b9812100902414653984000034840400512414253920000014440b805224142539f55bbea987c34097ee554197200300b44fa85f97e00200b4081840f9150140f9160940f9bf0600f14b020054c08640f8b50600d180ffffb4f40300aa081043b91f35007100ffff541f390071c0feff54e00314aae1031faa27106397e00314aaa1018052e2031f2a10386297eeffff17f55bc2a869b7fff06cffff17e00313aa019eff9021c0099102a3fff042200f9103008092d5e4aa97800100b5e00313aa019eff9021c0099182a3ffb042e0079103008092cde4aa97800000b5812100903f002539ecffff1781210090e200805222002539e8ffff17')
+            if GACHA8: ff3 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'f3_lapis47.bin'), 'rb').read()
+            assert len(ff3) == (376 if GACHA8 else 360)
             assert data[CAVE_OFF + 0x14:CAVE_OFF + 0x18] == adrp(CAVE_VA + 0x14, 9), 'unexpected adrp in speed cave'
-            assert set(data[eng_file(F3):eng_file(F3) + 0x120]) == {0}
+            assert set(data[eng_file(F3):eng_file(F3) + 0x180]) == {0}
             data[eng_file(F3):eng_file(F3) + len(ff3)] = ff3
             data[CAVE_OFF + 0x14:CAVE_OFF + 0x18] = B(CAVE_VA + 0x14, F3)
             grow_bss(data)
@@ -231,7 +252,7 @@ def patch_libgame(data):
         assert data[call:call+4] == bytes.fromhex('00013fd6'); data[call:call+4] = bl(call, CAVE_VA)
         ts = 0x2ae40cc     # Scheduler::update time scale
         assert data[ts:ts+4] == bytes.fromhex('012440bd'); data[ts:ts+4] = bl(ts, CAVE_VA + c2)
-        grow_engine_segment(data, FF_VA + 0x14c if FF_BUTTON else CAVE_VA + len(cave))
+        grow_engine_segment(data, FF_VA + 0x1e4 if FF_BUTTON else CAVE_VA + len(cave))
         log.append('libgame: game speed 3x on Auto, 2.5x on Repeat' if SPEED == 4 else 'libgame: %dx game speed while battle Auto is on' % SPEED)
     if RAID_AUTOPLAY:
         RC, ROFF = RAID_VA, eng_file(RAID_VA)
@@ -248,6 +269,79 @@ def patch_libgame(data):
         assert data[0x236f3c8:0x236f3cc] == bytes.fromhex('29908052')
         data[0x236f3c8:0x236f3cc] = struct.pack('<I', 0x52800000 | (0x485 << 5) | 9)
         log.append('libgame: quest auto-play allowed in raids')
+    if FUSION5:
+        # Bulk Fusion (UnitMixAutoSelectScene::setLayoutFilterStartRare) builds its base-rarity button list as {1,2,4,8}.
+        # Jump out before the "8" push, push 8, 16 (5 star) and, with fusion6, 32 (6 star), then rejoin.
+        # Layout wraps at 5 buttons per row, so a 6th wraps to a second row: setLayoutFilterRange (the "Units to Select"
+        # section) is called through a stub that moves its three layout entries down one row (104) and back afterwards.
+        TOP = 5
+        FV = 0x4301200; FO = eng_file(FV)
+        PB = 0x1309480; HOOK = 0x26b414c; BACK = 0x26b4174
+        assert data[HOOK:HOOK+4] == bytes.fromhex('0a018052') and data[0x26b4168:0x26b4170] == bytes.fromhex('e0630191e1c30291'), 'unexpected bulk fusion code'
+        assert set(data[FO:FO + 0x240]) == {0}, 'fusion cave not empty'
+        w = lambda x: struct.pack('<I', x)
+        code = b''
+        for val in ((8, 16, 32) if FUSION6 else (8, 16)):
+            code += w(0x5280000a | (val << 5)) + w(0xb900b3ea) + w(0x910163e0) + w(0x9102c3e1)
+            code += bl(FV + len(code), PB)
+        code += B(FV + len(code), BACK)
+        assert len(code) <= 0x50
+        data[FO:FO + len(code)] = code
+        data[HOOK:HOOK+4] = B(HOOK, FV)
+        # createFilteredUnitList skipped any unit above 4 star and any unit whose family's lowest form is above 4 star.
+        # Raise the unit cap to TOP and let the family limit be max(4, the unit's own rarity) so 4 star behaviour is unchanged.
+        CV = FV + 0x50; CO = eng_file(CV); LIM1 = 0x26ae888; SKIP = 0x26ae794; AFTER = 0x26ae890; LIM2 = 0x26ae894
+        assert data[LIM1:LIM1+8] == bytes.fromhex('5f1100714cf8ff54') and data[AFTER:AFTER+4] == bytes.fromhex('e8124239') and data[LIM2:LIM2+4] == bytes.fromhex('1f110071'), 'unexpected fusion filter code'
+        if FUSION6:
+            # families whose lowest form is NV/6 star or above (the 6th button, the game's own "NV start" filter) skip both limits
+            NVOK = 0x26ae89c
+            c2 = w(0x394212e8) + w(0x7100195f)
+            c2 += BC(CV + len(c2), CV + len(c2) + 8, 0xb)     # b.lt over the long branch
+            c2 += B(CV + len(c2), NVOK)
+            c2 += w(0x52800089) + w(0x7100111f) + w(0x1a898109) + w(0x6b09015f)
+        else:
+            c2 = w(0x394212e8) + w(0x52800089) + w(0x7100111f) + w(0x1a898109) + w(0x6b09015f)
+        c2 += BC(CV + len(c2), CV + len(c2) + 8, 0xd)     # b.le over the long branch (b.cond reaches only 1 MB)
+        c2 += B(CV + len(c2), SKIP)
+        c2 += B(CV + len(c2), AFTER)
+        assert len(c2) <= 0x30
+        data[CO:CO + len(c2)] = c2
+        data[LIM1:LIM1+4] = B(LIM1, CV)
+        data[LIM2:LIM2+4] = w(0x7100001f | (TOP << 10) | (8 << 5))
+        end = CV + 0x20
+        if FUSION6:
+            SV = CV + 0x30; SO = eng_file(SV)
+            stub = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fusion6_stub.bin'), 'rb').read()
+            assert len(stub) == 352
+            data[SO:SO + len(stub)] = stub
+            CALL = 0x26b34e0
+            assert data[CALL:CALL+4] == bl(CALL, 0x133eb90), 'unexpected setLayoutFilterRange call'
+            data[CALL:CALL+4] = bl(CALL, SV)
+            end = SV + len(stub)
+            # the 6th button's picture: the game has no "6 star start" image, so use its NV start one (sort_label_nvstart_s<state>.png)
+            DV = end; DO = eng_file(DV)
+            dcode = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fusion6_label.bin'), 'rb').read()
+            assert len(dcode) == 80 and DV == 0x43013e0
+            assert data[0x26b42e4:0x26b42e8] == bytes.fromhex('e20319aa') and data[0x26b42f8:0x26b42fc] == bytes.fromhex('e20319aa')
+            data[DO:DO + len(dcode)] = dcode
+            data[0x26b42e4:0x26b42e8] = B(0x26b42e4, DV)
+            data[0x26b42f8:0x26b42fc] = B(0x26b42f8, DV + 0x18)
+            end = DV + len(dcode)
+        grow_engine_segment(data, end)
+        log.append('libgame: Bulk Fusion gets %s star base buttons' % ('5 and 6' if FUSION6 else '5'))
+    if NEWUNIT:
+        # Elvlin's engine never sends the gacha "new unit ids" field (uR70J6Lr), so GachaResultScene::isNewUnit is always
+        # false and multi-summons never show the new-unit reveal (UnitGetScene) or NEW icon. Replace the one call in
+        # GachaResultScene::setLayout with newunit.bin: a result is new if it is the first of its unit id in this summon
+        # and the player owns no more copies of that unit than this summon gave (i.e. owned none before).
+        NV_ = 0x4301430; NO_ = eng_file(NV_); CALLN = 0x217dd3c
+        code = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'newunit.bin'), 'rb').read()
+        assert data[CALLN:CALLN+4] == bl(CALLN, 0x13278e0), 'unexpected isNewUnit call'
+        assert set(data[NO_:NO_ + len(code)]) == {0}, 'newunit cave not empty'
+        data[NO_:NO_ + len(code)] = code
+        data[CALLN:CALLN+4] = bl(CALLN, NV_)
+        grow_engine_segment(data, NV_ + len(code))
+        log.append('libgame: multi-summon new-unit reveal (new = owned no copy before)')
     return bytes(data)
 
 zin, zr = zipfile.ZipFile(src), zipfile.ZipFile(rules_apk)

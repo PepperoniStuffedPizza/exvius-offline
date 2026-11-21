@@ -2,7 +2,27 @@
 
 Unofficial patched builds of Elvlin's Exvius Offline (https://github.com/Elvlin/exvius-offline). Elvlin allows modification and redistribution. All changes are binary patches to his finished APK plus edited rule files; the engine source is not public. Each native patch asserts the original bytes, so a wrong base fails instead of producing a broken build. Versions marked "not tested" were built but not confirmed on a phone.
 
-## v0.1.36-lapis38 (versionCode 9124) - latest
+## v0.1.36-lapis51 (versionCode 9137) - latest
+- New-unit reveal in multi-summons: units you did not own before now get the full "Obtained" screen and the NEW badge on the results grid. Elvlin's engine never sends the game's "new unit ids" field, so this was missing in every earlier build (only NeoVision units and single summons showed it). The game now decides on its own: new = first copy in this summon and you owned none before. Confirmed working.
+- Everything from lapis47, with the 7x summon speed restored.
+
+## v0.1.36-lapis48 to lapis50 (9134-9136, diagnostic)
+- Tried to fix the missing reveal by reducing (lapis48), removing (lapis49) and fully disabling (lapis50) the summon speed-up. None helped; the speed-up was not the cause (see lapis51).
+
+## v0.1.36-lapis44 to lapis47 (9130-9133): Bulk Fusion 5 star and NV base
+- lapis44: 5 star Base button added (button appeared but found nothing).
+- lapis45: lifted the game's hidden "4 star max" filter so 5 star bases are found. Confirmed working.
+- lapis46: 6th button (blank picture: the game has no "6 star base" image).
+- lapis47: the 6th button is the game's own "NV base" filter (units whose family starts at NV), with its own picture; the "Units to Select" row moves down to make room.
+
+## v0.1.36-lapis43 (9129): 15-unit multi-summons
+- Every 11-unit multi-summon (buttons, step-ups, campaigns) gives 15 units at the same cost; the Friend Point multi gives 15. The button art still says 11.
+
+## v0.1.36-lapis39 to lapis42 (9125-9128): summon speed
+- `instantsummon` removed (it cut the single-summon reveal short).
+- lapis41: summon animation runs at 7x. lapis42: the "Units Obtained" crystal screen runs at 7x too. Battle Speed button unchanged (3x).
+
+## v0.1.36-lapis38 (versionCode 9124)
 - Same contents as lapis35, rebuilt with a higher version code so it installs over lapis37 and keeps saves.
 - Known limit: the Finish button still goes through each wave (see lapis30 to lapis35 below).
 
