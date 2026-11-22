@@ -6,6 +6,7 @@ _start:
     stp x19, x20, [sp, #16]
     stp x21, x22, [sp, #32]
     stp x23, x24, [sp, #48]
+    mov w24, #10
     ldr x8, [x0, #0x620]
     cbz x8, no
     ldr x19, [x8, #0x30]
@@ -20,7 +21,7 @@ _start:
     ldr x9, [x0]
     ldr x9, [x9, #0x248]
     blr x9
-    mov w21, w0
+    udiv w21, w0, w24          // unit family = id / 10 (last digit is the rarity form)
     mov w22, #0
     mov w23, #0
 loop:
@@ -33,6 +34,7 @@ loop:
     ldr x9, [x0]
     ldr x9, [x9, #0x248]
     blr x9
+    udiv w0, w0, w24
     cmp w0, w21
     b.ne next
     cmp w22, w20
@@ -42,10 +44,26 @@ next:
     add w22, w22, #1
     b loop
 done:
-    bl UUIL
-    mov w1, w21
-    bl CNT
-    cmp w0, w23
+    bl UUIL                    // count owned units (box and reserves) of the same family
+    cbz x0, no
+    ldr x19, [x0, #0x30]
+    mov w22, #0
+own:
+    cbz x19, cmpit
+    ldr x0, [x19, #0x108]
+    ldr x20, [x19, #0x120]
+    cbz x0, onext
+    ldr x9, [x0]
+    ldr x9, [x9, #0x248]
+    blr x9
+    udiv w0, w0, w24
+    cmp w0, w21
+    cinc w22, w22, eq
+onext:
+    mov x19, x20
+    b own
+cmpit:
+    cmp w22, w23
     cset w0, le
     b out
 no:

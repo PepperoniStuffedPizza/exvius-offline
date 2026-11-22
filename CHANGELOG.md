@@ -2,7 +2,10 @@
 
 Unofficial patched builds of Elvlin's Exvius Offline (https://github.com/Elvlin/exvius-offline). Elvlin allows modification and redistribution. All changes are binary patches to his finished APK plus edited rule files; the engine source is not public. Each native patch asserts the original bytes, so a wrong base fails instead of producing a broken build. Versions marked "not tested" were built but not confirmed on a phone.
 
-## v0.1.36-lapis51 (versionCode 9137) - latest
+## v0.1.36-lapis52 (versionCode 9138) - latest
+- New-unit reveal now checks every rarity form: owning a unit's 6 star or NV form (in your box or reserves) stops its 5 star copy counting as new. Units used in fusion or sold leave no record, so they still count as new.
+
+## v0.1.36-lapis51 (versionCode 9137)
 - New-unit reveal in multi-summons: units you did not own before now get the full "Obtained" screen and the NEW badge on the results grid. Elvlin's engine never sends the game's "new unit ids" field, so this was missing in every earlier build (only NeoVision units and single summons showed it). The game now decides on its own: new = first copy in this summon and you owned none before. Confirmed working.
 - Everything from lapis47, with the 7x summon speed restored.
 
