@@ -12,15 +12,16 @@ Needs Python 3.8+ (`py -3`). Nothing to install. The older v0.1.31 kit is in `..
 - `classes8-ff036-lapis38.dex` - classes8.dex with the update prompt plus the Speed and Finish buttons (used by every build since lapis35).
 - `*.s` / `*.bin` - native routines added since lapis39 (see below).
 
-## Rebuild lapis52 (latest)
+## Rebuild lapis53 (latest)
 Put Elvlin's `exvius-offline-v0.1.36.apk` and `game-assets-13.apk` next to the script, copy `classes8-ff036-lapis38.dex` to `classes8-ff036.dex` (the Java side has not changed since lapis35), then run:
 
-    py -3 -I patch036.py exvius-offline-v0.1.36.apk game-assets-13.apk exvius-offline-v0.1.36-lapis52-unsigned.apk 50000 9138 prompt=classes8-ff036.dex loop=99 speed3r raidautoplay searchname fp50k fpdraws=15 multidraws=15 dropx=10 allchallenges kingpots=50 tmrmulti ffbutton fusion6 newunit
+    py -3 -I patch036.py exvius-offline-v0.1.36.apk game-assets-13.apk exvius-offline-v0.1.36-lapis53-unsigned.apk 50000 9139 prompt=classes8-ff036.dex loop=99 speed3r raidautoplay searchname fp50k fpdraws=15 multidraws=15 dropx=10 allchallenges kingpots=50 tmrmulti ffbutton fusion6 newunit chest=500000
 
-This reproduces the published lapis52 APK byte for byte (unsigned). Sign it with your own key (zipalign -p -f 4, then apksigner).
-Version codes: lapisN = 9086+N for lapis21 to lapis43 (lapis41 = 9127, lapis43 = 9129), then lapis44 = 9130 ... lapis52 = 9138 (still 9086+N).
+This reproduces the published lapis53 APK byte for byte (unsigned). Sign it with your own key (zipalign -p -f 4, then apksigner).
+Version codes: lapisN = 9086+N for lapis21 to lapis43 (lapis41 = 9127, lapis43 = 9129), then lapis44 = 9130 ... lapis53 = 9139 (still 9086+N).
 
 Options added since lapis38:
+- `chest=N` - the Lapis Chest bundle gives N Lapis (lapis53+ use 500,000); daily quests keep the main lapis amount.
 - `multidraws=N` - every 11-draw summon in the `gacha_*.json` rules (multi buttons, step-ups, campaigns) gives N units; costs unchanged. lapis43+ use 15.
 - `fpdraws=N` - Friend Point multi gives N units (lapis43+ use 15).
 - `fusion5` - Bulk Fusion gets a 5 star base button and the "max 4 star" filter in `UnitMixAutoSelectConfirmScene::createFilteredUnitList` is lifted to 5.

@@ -25,6 +25,7 @@ FF_BUTTON = 'ffbutton' in EXTRA
 FUSION6 = 'fusion6' in EXTRA
 GACHA8 = 'gacha8' in EXTRA
 NEWUNIT = 'newunit' in EXTRA
+CHEST = next((int(a[6:]) for a in EXTRA if a.startswith('chest=')), None)
 FUSION5 = 'fusion5' in EXTRA or FUSION6
 TMR_ALL = 'tmr' in EXTRA or 'tmrmulti' in EXTRA
 TMR_LIMIT = None if 'tmrmulti' in EXTRA else 'once'
@@ -97,8 +98,8 @@ def edit_rule(name, data):
                     assert sum(c in KP for c in b['contents']) == 6, 'king pots not found in Super Premium Box'
                     b['contents'] = [c[:-1] + str(KING_POTS) if c in KP else c for c in b['contents']]
                     log.append('rules: Super Premium Box King Pots (Tough/Magi/Power/Shield/Smart/Soul) x%d each' % KING_POTS)
-        r['bundles'].append({'id': '990000114', 'name': 'Lapis Chest (%s Lapis)' % format(lapis, ','),
-                             'icon': '3197_20230905013503.png', 'gil': 1, 'limit': None, 'contents': ['50:1:%d' % lapis]})
+        r['bundles'].append({'id': '990000114', 'name': 'Lapis Chest (%s Lapis)' % format(CHEST or lapis, ','),
+                             'icon': '3197_20230905013503.png', 'gil': 1, 'limit': None, 'contents': ['50:1:%d' % (CHEST or lapis)]})
         if TMR_ALL:
             T = json.load(open(os.path.join(HERE, 'tmr_rewards.json')))
             parts = [('1-3', T['1'] + T['2'] + T['3']), ('4', T['4']), ('5 (1/2)', T['5'][:195]), ('5 (2/2)', T['5'][195:])]

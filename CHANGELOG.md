@@ -2,7 +2,10 @@
 
 Unofficial patched builds of Elvlin's Exvius Offline (https://github.com/Elvlin/exvius-offline). Elvlin allows modification and redistribution. All changes are binary patches to his finished APK plus edited rule files; the engine source is not public. Each native patch asserts the original bytes, so a wrong base fails instead of producing a broken build. Versions marked "not tested" were built but not confirmed on a phone.
 
-## v0.1.36-lapis52 (versionCode 9138) - latest
+## v0.1.36-lapis53 (versionCode 9139) - latest
+- Lapis Chest bundle gives 500,000 Lapis (was 50,000). Daily quest rewards unchanged.
+
+## v0.1.36-lapis52 (versionCode 9138)
 - New-unit reveal now checks every rarity form: owning a unit's 6 star or NV form (in your box or reserves) stops its 5 star copy counting as new. Units used in fusion or sold leave no record, so they still count as new.
 
 ## v0.1.36-lapis51 (versionCode 9137)
