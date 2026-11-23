@@ -25,6 +25,7 @@ FF_BUTTON = 'ffbutton' in EXTRA
 FUSION6 = 'fusion6' in EXTRA
 GACHA8 = 'gacha8' in EXTRA
 NEWUNIT = 'newunit' in EXTRA
+STMR = next((int(a[5:]) for a in EXTRA if a.startswith('stmr=')), None)
 CHEST = next((int(a[6:]) for a in EXTRA if a.startswith('chest=')), None)
 FUSION5 = 'fusion5' in EXTRA or FUSION6
 TMR_ALL = 'tmr' in EXTRA or 'tmrmulti' in EXTRA
@@ -111,6 +112,12 @@ def edit_rule(name, data):
                 r['bundles'].append({'id': bid, 'name': 'All TMR %s star (%d)' % (lab, len(c)), 'icon': '3197_20230905013503.png',
                                      'gil': 1, 'limit': TMR_LIMIT, 'contents': list(c)})
             log.append('rules: 4 TMR bundles 990000115-118 (783 TMRs from 1-6 star units, 1 gil, %s)' % ('repeatable' if TMR_LIMIT is None else 'once'))
+        if STMR:
+            # Super Trust Moogle (ALL 100%) is unit 906000105 (raid_archive.json's own reward)
+            assert not any(b['id'] == '990000119' for b in r['bundles'])
+            r['bundles'].append({'id': '990000119', 'name': 'Super Trust Moogle x%d' % STMR, 'icon': '3197_20230905013503.png',
+                                 'gil': 1, 'limit': None, 'contents': ['10:906000105:%d' % STMR]})
+            log.append('rules: bundle 990000119 Super Trust Moogle x%d (1 gil, repeatable)' % STMR)
         return json.dumps(r, ensure_ascii=False, indent=1).encode()
     if name == 'gacha_authored.json' and FP_DRAWS:
         r = json.loads(data)

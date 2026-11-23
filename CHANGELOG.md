@@ -2,7 +2,10 @@
 
 Unofficial patched builds of Elvlin's Exvius Offline (https://github.com/Elvlin/exvius-offline). Elvlin allows modification and redistribution. All changes are binary patches to his finished APK plus edited rule files; the engine source is not public. Each native patch asserts the original bytes, so a wrong base fails instead of producing a broken build. Versions marked "not tested" were built but not confirmed on a phone.
 
-## v0.1.36-lapis53 (versionCode 9139) - latest
+## v0.1.36-lapis54 (versionCode 9140) - latest
+- New shop bundle "Super Trust Moogle x10": 10 Super Trust Moogles (ALL 100%) for 1 gil, buy as often as you like.
+
+## v0.1.36-lapis53 (versionCode 9139)
 - Lapis Chest bundle gives 500,000 Lapis (was 50,000). Daily quest rewards unchanged.
 
 ## v0.1.36-lapis52 (versionCode 9138)
