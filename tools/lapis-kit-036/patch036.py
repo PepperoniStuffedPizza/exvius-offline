@@ -33,6 +33,7 @@ TMR_LIMIT = None if 'tmrmulti' in EXTRA else 'once'
 KING_POTS = next((int(a[9:]) for a in EXTRA if a.startswith('kingpots=')), None)
 DROP_X = next((int(a[6:]) for a in EXTRA if a.startswith('dropx=')), None)
 MULTI_DRAWS = next((int(a[11:]) for a in EXTRA if a.startswith('multidraws=')), None)
+MULTI_PRICE = 'multiprice' in EXTRA
 FP_DRAWS = next((int(a[8:]) for a in EXTRA if a.startswith('fpdraws=')), None)
 SPEED = 4 if 'speed3r' in EXTRA else 3 if 'speed3' in EXTRA else 2 if 'speed2' in EXTRA else 0
 SPEED2 = SPEED > 0
@@ -80,7 +81,13 @@ def disable_updates(d):
 def edit_rule(name, data):
     if MULTI_DRAWS and name.startswith('gacha_') and name.endswith('.json'):
         # every 11-draw multi-summon (button offers, step-up steps, campaigns) -> MULTI_DRAWS units; costs unchanged
-        txt, n = re.subn(r'("draws":\s*)11\b', lambda m: m.group(1) + str(MULTI_DRAWS), data.decode('utf8'))
+        txt = data.decode('utf8')
+        if MULTI_PRICE:
+            # 10+1 summons are priced for 10 pulls: scale the amount to MULTI_DRAWS/10 x (e.g. 5000 -> 15000 for 30)
+            txt, k = re.subn(r'("cost":\s*\{[^{}]*?"amount":\s*)(\d+)(\s*\}\s*,\s*"draws":\s*)11\b',
+                             lambda m: m.group(1) + str(int(m.group(2)) * MULTI_DRAWS // 10) + m.group(3) + '11', txt)
+            log.append('rules: %s: %d eleven-draw prices scaled x%d/10' % (name, k, MULTI_DRAWS))
+        txt, n = re.subn(r'("draws":\s*)11\b', lambda m: m.group(1) + str(MULTI_DRAWS), txt)
         if n:
             data = txt.encode('utf8'); log.append('rules: %s: %d eleven-draw summons -> %d units' % (name, n, MULTI_DRAWS))
     if name == 'daily_quests.json':
