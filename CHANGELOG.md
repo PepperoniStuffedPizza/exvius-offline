@@ -85,3 +85,6 @@ Unofficial patched builds of Elvlin's Exvius Offline (https://github.com/Elvlin/
 
 ## lapis55
 - All multi-summons are 30 units (`multidraws=30`), and the lapis, ticket and friend-point prices are scaled to match (`multiprice`, 5000 -> 15000; friend points 6000). versionCode 9141.
+
+## lapis58
+- Multi-summons are 15 units (the result screen grid is 5x3; counts above 15 fell back to 11 in tests of 20 and 30) with prices scaled x1.5 (`multiprice`, 5000 -> 7500; friend points 3000). versionCode 9144.
