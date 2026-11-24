@@ -79,17 +79,18 @@ def disable_updates(d):
     return bytes(d)
 
 def edit_rule(name, data):
-    if MULTI_DRAWS and name.startswith('gacha_') and name.endswith('.json'):
+    if MULTI_DRAWS and (name.startswith('gacha_') or name.startswith('summon/')) and name.endswith('.json'):
         # every 11-draw multi-summon (button offers, step-up steps, campaigns) -> MULTI_DRAWS units; costs unchanged
         txt = data.decode('utf8')
         if MULTI_PRICE:
             # 10+1 summons are priced for 10 pulls: scale the amount to MULTI_DRAWS/10 x (e.g. 5000 -> 15000 for 30)
             txt, k = re.subn(r'("cost":\s*\{[^{}]*?"amount":\s*)(\d+)(\s*\}\s*,\s*"draws":\s*)11\b',
                              lambda m: m.group(1) + str(int(m.group(2)) * MULTI_DRAWS // 10) + m.group(3) + '11', txt)
-            log.append('rules: %s: %d eleven-draw prices scaled x%d/10' % (name, k, MULTI_DRAWS))
+            if k and not name.startswith('summon/full/'): log.append('rules: %s: %d eleven-draw prices scaled x%d/10' % (name, k, MULTI_DRAWS))
         txt, n = re.subn(r'("draws":\s*)11\b', lambda m: m.group(1) + str(MULTI_DRAWS), txt)
         if n:
-            data = txt.encode('utf8'); log.append('rules: %s: %d eleven-draw summons -> %d units' % (name, n, MULTI_DRAWS))
+            data = txt.encode('utf8')
+            if not name.startswith('summon/full/'): log.append('rules: %s: %d eleven-draw summons -> %d units' % (name, n, MULTI_DRAWS))
     if name == 'daily_quests.json':
         r = json.loads(data)
         for q in r['quests']: q['reward_info'] = '50:1:%d' % lapis
@@ -126,6 +127,15 @@ def edit_rule(name, data):
                                  'gil': 1, 'limit': None, 'contents': ['10:906000105:%d' % STMR]})
             log.append('rules: bundle 990000119 Super Trust Moogle x%d (1 gil, repeatable)' % STMR)
         return json.dumps(r, ensure_ascii=False, indent=1).encode()
+    if FP_DRAWS and name in ('summon/index.json', 'summon/full/1.json'):
+        # 0.1.36 reads summons from summon/ (gacha_*.json are legacy and unread); friend multi = 10 for 2000
+        r = json.loads(data)
+        bs = [x for x in r['banners'] if x['id'] == '1'] if 'banners' in r else [r]
+        assert len(bs) == 1 and bs[0]['type'] == 'friend'
+        so = bs[0]['secondary_offer']; assert so['draws'] == 10 and so['cost']['amount'] == 2000
+        so['draws'] = FP_DRAWS; so['cost']['amount'] = 200 * FP_DRAWS
+        log.append('rules: %s friend multi-summon -> %d units for %d points' % (name, FP_DRAWS, 200 * FP_DRAWS))
+        data = json.dumps(r, ensure_ascii=False, separators=(',', ':') if name != 'summon/index.json' else None, indent=None if name != 'summon/index.json' else 1).encode()
     if name == 'gacha_authored.json' and FP_DRAWS:
         r = json.loads(data)
         b = [x for x in r['banners'] if x['id'] == '1' and x.get('type') == 'friend']

@@ -88,3 +88,6 @@ Unofficial patched builds of Elvlin's Exvius Offline (https://github.com/Elvlin/
 
 ## lapis58
 - Multi-summons are 15 units (the result screen grid is 5x3; counts above 15 fell back to 11 in tests of 20 and 30) with prices scaled x1.5 (`multiprice`, 5000 -> 7500; friend points 3000). versionCode 9144.
+
+## lapis59
+- Fix: the 0.1.36 engine reads summons from `rules/summon/index.json` and `rules/summon/full/<id>.json`; the `gacha_*.json` files are legacy and unread, so `multidraws`/`fpdraws` never took effect in lapis43-58 (summons stayed 11, friend 10). The edits now apply to the summon files. 30-unit multi-summons, prices x3 (5000 -> 15000), friend multi 30 for 6000. versionCode 9145. Untested on phone.
