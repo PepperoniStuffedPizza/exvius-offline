@@ -1,0 +1,33 @@
+--- c8b/smali/com/exvius/local/DataUpdates.smali	2026-11-25 01:27:40.254160888 -0500
++++ c8m/smali/com/exvius/local/DataUpdates.smali	2026-11-25 01:32:57.048747436 -0500
+@@ -3719,6 +3719,19 @@
+ 
+     if-gt v2, v0, :cond_d
+ 
++    # lapis: game data is frozen at revision 34 (the rules shipped in this APK under rulez/ are r34)
++    const-string v2, "revision"
++
++    invoke-virtual {v5, v2}, Lorg/json/JSONObject;->getLong(Ljava/lang/String;)J
++
++    move-result-wide v6
++
++    const-wide/16 v8, 0x22
++
++    cmp-long v2, v6, v8
++
++    if-gtz v2, :cond_a
++
+     .line 696
+     if-nez p1, :cond_9
+ 
+--- c8b/smali/com/exvius/local/DataUpdates$1.smali	2026-11-25 01:27:40.212338448 -0500
++++ c8m/smali/com/exvius/local/DataUpdates$1.smali	2026-11-25 01:32:57.048998642 -0500
+@@ -76,6 +76,8 @@
+ .method public onActivityResumed(Landroid/app/Activity;)V
+     .locals 0
+ 
++    invoke-static {p1}, Lcom/exvius/local/FastForward;->attach(Landroid/app/Activity;)V
++
+     .line 183
+     return-void
+ .end method

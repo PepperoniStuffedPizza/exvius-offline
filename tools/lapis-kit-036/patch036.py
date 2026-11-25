@@ -146,7 +146,7 @@ def edit_rule(name, data):
         return json.dumps(r, ensure_ascii=False, indent=1).encode()
     if name.endswith('F_MONSTER_PARTS_MST.tsv') and DROP_X:
         lines = data.decode('utf8').split('\n')
-        fields = json.loads(lines[0][2:])['fields']
+        fields = json.loads(lines[0][1:])['fields']
         cols = [fields.index(f) for f in ('3frn4ILX', 'IRf10dwx', '9BetM2Ds', 'MZn8LC6H')]
         pat = re.compile(r'^(\d+:\d+:)(\d+)(:\d+\s*)$')
         changed = 0

@@ -91,3 +91,7 @@ Unofficial patched builds of Elvlin's Exvius Offline (https://github.com/Elvlin/
 
 ## lapis59
 - Fix: the 0.1.36 engine reads summons from `rules/summon/index.json` and `rules/summon/full/<id>.json`; the `gacha_*.json` files are legacy and unread, so `multidraws`/`fpdraws` never took effect in lapis43-58 (summons stayed 11, friend 10). The edits now apply to the summon files. 30-unit multi-summons, prices x3 (5000 -> 15000), friend multi 30 for 6000. versionCode 9145. Untested on phone.
+
+## v0.1.90-lapis60 (9146): rebased on Elvlin beta v0.1.90 (data r34)
+- Fixes the crash opening Awaken for 5-star units (Elvlin beta fix), adds the beta's other fixes and 5-star Select Summon.
+- All lapis features carried over; game data frozen at r34. Untested on phone.
