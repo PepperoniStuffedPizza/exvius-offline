@@ -95,3 +95,6 @@ Unofficial patched builds of Elvlin's Exvius Offline (https://github.com/Elvlin/
 ## v0.1.90-lapis60 (9146): rebased on Elvlin beta v0.1.90 (data r34)
 - Fixes the crash opening Awaken for 5-star units (Elvlin beta fix), adds the beta's other fixes and 5-star Select Summon.
 - All lapis features carried over; game data frozen at r34. Untested on phone.
+
+## v0.1.90-lapis61 (9147): cryst bundles
+- `crysts=1000`: 11 bundles 990000300-310 (1 gil, repeatable): 8 element Crysts, 8 Megacrysts, Esper/Sacred/Holy/Divine Crystals, and Alcryst-Milcryst-Heavicryst-Giancryst-Purecryst for White, Black, Green, Power, Guard, Healing, Support and Tech (270000100+).

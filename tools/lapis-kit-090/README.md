@@ -7,7 +7,7 @@ Installs over the lapis app (package `com.exvius.offline.test`) and keeps the sa
    Copies the client-code patches (the game code is identical at every patched site), moves the code cave to 0x4334100
    (after the beta's larger engine segment) re-encoding its PC-relative references, moves the fast-forward flag to
    0x4731c20, and re-applies rules/ -> rulez/, Friend Points 50,000 and mission challenges at beta addresses.
-3. `python3 build090.py <beta.apk> <v0.1.36.apk> <game-assets.apk from data r34 client-assets> <out libgame> classes8-beta090-lapis.dex <out-unsigned.apk> 50000 9146 fpdraws=30 multidraws=30 multiprice dropx=10 kingpots=50 tmrmulti chest=500000 stmr=10`
+3. `python3 build090.py <beta.apk> <v0.1.36.apk> <game-assets.apk from data r34 client-assets> <out libgame> classes8-beta090-lapis.dex <out-unsigned.apk> 50000 9147 fpdraws=30 multidraws=30 multiprice dropx=10 kingpots=50 tmrmulti chest=500000 stmr=10 crysts=1000`
 4. Sign on the PC with `sign-v030.bat`.
 
 classes8 changes (`smali/`): FastForward button (flag 0x4731c20) attached in onActivityResumed; game data frozen at

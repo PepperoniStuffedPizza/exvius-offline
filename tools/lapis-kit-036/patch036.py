@@ -26,6 +26,7 @@ FUSION6 = 'fusion6' in EXTRA
 GACHA8 = 'gacha8' in EXTRA
 NEWUNIT = 'newunit' in EXTRA
 STMR = next((int(a[5:]) for a in EXTRA if a.startswith('stmr=')), None)
+CRYSTS = next((int(a[7:]) for a in EXTRA if a.startswith('crysts=')), None)
 CHEST = next((int(a[6:]) for a in EXTRA if a.startswith('chest=')), None)
 FUSION5 = 'fusion5' in EXTRA or FUSION6
 TMR_ALL = 'tmr' in EXTRA or 'tmrmulti' in EXTRA
@@ -126,6 +127,20 @@ def edit_rule(name, data):
             r['bundles'].append({'id': '990000119', 'name': 'Super Trust Moogle x%d' % STMR, 'icon': '3197_20230905013503.png',
                                  'gil': 1, 'limit': None, 'contents': ['10:906000105:%d' % STMR]})
             log.append('rules: bundle 990000119 Super Trust Moogle x%d (1 gil, repeatable)' % STMR)
+        if CRYSTS:
+            ids = set(b['id'] for b in r['bundles'])
+            groups = [('Crysts (8 elements)', range(201000100, 201000900, 100)),
+                      ('Megacrysts (8 elements)', range(201000900, 201001700, 100)),
+                      ('Esper, Sacred, Holy and Divine Crystals', range(290050200, 290050600, 100))]
+            # ability awakening crysts: 5 tiers (Alcryst, Milcryst, Heavicryst, Giancryst, Purecryst) per family
+            for fam, base in (('White', 100), ('Black', 600), ('Green', 1100), ('Power', 2600), ('Guard', 3100),
+                              ('Healing', 3600), ('Support', 4100), ('Tech', 4600)):
+                groups.append(('%s Alcryst to Purecryst' % fam, range(270000000 + base, 270000000 + base + 500, 100)))
+            for k, (lab, rg) in enumerate(groups):
+                bid = str(990000300 + k); assert bid not in ids
+                r['bundles'].append({'id': bid, 'name': '%s x%d' % (lab, CRYSTS), 'icon': '3197_20230905013503.png',
+                                     'gil': 1, 'limit': None, 'contents': ['20:%d:%d' % (i, CRYSTS) for i in rg]})
+            log.append('rules: %d cryst bundles from 990000300 (x%d each, 1 gil, repeatable)' % (len(groups), CRYSTS))
         return json.dumps(r, ensure_ascii=False, indent=1).encode()
     if FP_DRAWS and name in ('summon/index.json', 'summon/full/1.json'):
         # 0.1.36 reads summons from summon/ (gacha_*.json are legacy and unread); friend multi = 10 for 2000
